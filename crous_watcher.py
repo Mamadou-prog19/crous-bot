@@ -7,6 +7,9 @@ import requests
 import json
 import os
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # =========================
 # PARAMÈTRES
@@ -15,8 +18,8 @@ import time
 VILLE = "Orléans"
 URL_RECHERCHE = "https://trouverunlogement.lescrous.fr/"
 
-TELEGRAM_TOKEN = "8548684599:AAE5M_qZyv_BHDbPnm5CJ1vNfUlu6-OyMoE"
-TELEGRAM_CHAT_ID = "6382923150"
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 FICHIER_VUS = "logements_vus.json"
 
@@ -41,13 +44,12 @@ def envoyer_telegram(message):
     requests.post(
         url,
         data={
-            "chat_id": TELEGRAM_CHAT_ID,
+            "chat_id": CHAT_ID,
             "text": message,
             "disable_web_page_preview": False,
         },
         timeout=15,
     )
-
 
 def envoyer_photo(path):
 
