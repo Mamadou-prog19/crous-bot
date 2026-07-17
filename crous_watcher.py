@@ -318,4 +318,7 @@ try:
 
 finally:
 
-    driver.quit()
+    try:
+        driver.quit()
+    except:
+        pass
