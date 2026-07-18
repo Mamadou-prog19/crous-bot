@@ -18,13 +18,34 @@ import time
 load_dotenv()
 
 VILLE = "Orléans"
-
 URL_RECHERCHE = "https://trouverunlogement.lescrous.fr/"
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 FICHIER_VUS = "logements_vus.json"
+FICHIER_STATUS = "status.json"
+
+
+# =========================
+# STATUS
+# =========================
+
+def mettre_a_jour_status(logements_trouves, statut="OK"):
+
+    status = {
+        "dernier_controle": time.strftime("%d/%m/%Y %H:%M:%S"),
+        "logements_trouves": logements_trouves,
+        "statut": statut
+    }
+
+    with open(FICHIER_STATUS, "w", encoding="utf-8") as f:
+        json.dump(
+            status,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
 
 
 # =========================
@@ -50,7 +71,7 @@ def envoyer_telegram(message):
 
 
 # =========================
-# CHARGEMENT LOGEMENTS VUS
+# LOGEMENTS VUS
 # =========================
 
 if os.path.exists(FICHIER_VUS):
@@ -77,7 +98,7 @@ def sauvegarder_logements():
 
 
 # =========================
-# NAVIGATEUR
+# DRIVER
 # =========================
 
 def creer_driver():
@@ -89,24 +110,18 @@ def creer_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
 
-    driver = webdriver.Chrome(
-        options=options
-    )
-
-    return driver
+    return webdriver.Chrome(options=options)
 
 
 
 # =========================
-# VERIFICATION CROUS
+# VERIFICATION
 # =========================
 
 def verifier_logements():
 
     driver = creer_driver()
-
     wait = WebDriverWait(driver, 30)
-
 
     print("🤖 Vérification CROUS lancée...")
 
@@ -117,61 +132,47 @@ def verifier_logements():
 
 
         ville = wait.until(
-
             EC.presence_of_element_located(
                 (
                     By.ID,
                     "PlaceAutocompletearia-autocomplete-1-input"
                 )
             )
-
         )
 
 
         ville.clear()
-
         ville.send_keys(VILLE)
 
 
-
         suggestion = wait.until(
-
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
                     "//li[@role='option'][contains(.,'Orléans')]"
                 )
             )
-
         )
-
 
         suggestion.click()
 
 
-
         bouton = wait.until(
-
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
                     "//button[contains(.,'Lancer une recherche')]"
                 )
             )
-
         )
 
-
         bouton.click()
-
 
 
         time.sleep(5)
 
 
-
         page = driver.page_source
-
 
 
         if (
@@ -182,11 +183,9 @@ def verifier_logements():
 
             print("Aucun logement.")
 
+            mettre_a_jour_status(0)
+
             return
-
-
-
-        print("Logements détectés !")
 
 
 
@@ -199,36 +198,27 @@ def verifier_logements():
         nouveaux = 0
 
 
-
         for annonce in annonces:
-
 
             lien = annonce.get_attribute("href")
 
 
-
             if (
-
                 lien
                 and
                 "/tools/45/" in lien
                 and
                 lien not in logements_vus
-
             ):
-
 
                 logements_vus.add(lien)
 
                 sauvegarder_logements()
 
 
-
                 envoyer_telegram(
-
                     "🚨 NOUVEAU LOGEMENT CROUS ORLÉANS\n\n"
                     + lien
-
                 )
 
 
@@ -248,36 +238,33 @@ def verifier_logements():
             )
 
 
+        mettre_a_jour_status(nouveaux)
+
+
 
     except Exception as e:
 
+        print("Erreur :", e)
 
-        print(
-            "Erreur :",
-            e
+        mettre_a_jour_status(
+            0,
+            "ERREUR"
         )
 
-
         envoyer_telegram(
-
             "❌ ERREUR BOT CROUS\n\n"
             + str(e)
-
         )
 
 
 
     finally:
 
-
         try:
-
             driver.quit()
 
         except:
-
             pass
-
 
 
 

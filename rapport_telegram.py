@@ -1,13 +1,17 @@
 from dotenv import load_dotenv
 import requests
 import os
+import json
 import time
 
 
 load_dotenv()
 
+
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+
+FICHIER_STATUS = "status.json"
 
 
 def envoyer_telegram(message):
@@ -24,16 +28,41 @@ def envoyer_telegram(message):
     )
 
 
-heure = time.strftime("%d/%m/%Y à %H:%M:%S")
+def lire_status():
+
+    if os.path.exists(FICHIER_STATUS):
+
+        with open(
+            FICHIER_STATUS,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            return json.load(f)
+
+
+    return {
+        "statut": "INCONNU",
+        "dernier_controle": "Jamais",
+        "logements_trouves": 0
+    }
+
+
+
+status = lire_status()
 
 
 message = (
     "🤖 Rapport Bot CROUS\n\n"
-    "✅ Le service fonctionne correctement.\n"
-    f"🕒 {heure}"
+    f"📌 Statut : {status['statut']}\n\n"
+    f"🕒 Dernier contrôle :\n"
+    f"{status['dernier_controle']}\n\n"
+    f"🏠 Logements détectés : "
+    f"{status['logements_trouves']}"
 )
 
 
 envoyer_telegram(message)
+
 
 print("Rapport envoyé.")
