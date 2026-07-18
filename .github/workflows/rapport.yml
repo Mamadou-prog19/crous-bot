@@ -1,0 +1,39 @@
+name: Rapport Telegram CROUS
+
+on:
+  schedule:
+    - cron: "0 8,14,20 * * *"
+
+  workflow_dispatch:
+
+
+jobs:
+
+  rapport:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+
+      - name: Installation Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+
+      - name: Installation dépendances
+        run: |
+          pip install -r requirements.txt
+
+
+      - name: Envoi rapport Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+
+        run: |
+          python rapport_telegram.py
