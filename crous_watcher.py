@@ -17,14 +17,24 @@ import time
 
 load_dotenv()
 
-VILLE = "Orléans"
+
+RECHERCHES = [
+    "Orléans",
+    "Polytech Orléans, Orléans",
+    "Université d'Orléans - Campus de la Source, Orléans"
+]
+
+
 URL_RECHERCHE = "https://trouverunlogement.lescrous.fr/"
+
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+
 FICHIER_VUS = "logements_vus.json"
 FICHIER_STATUS = "status.json"
+
 
 
 # =========================
@@ -39,13 +49,16 @@ def mettre_a_jour_status(logements_trouves, statut="OK"):
         "statut": statut
     }
 
+
     with open(FICHIER_STATUS, "w", encoding="utf-8") as f:
+
         json.dump(
             status,
             f,
             ensure_ascii=False,
             indent=2
         )
+
 
 
 # =========================
@@ -56,7 +69,9 @@ def envoyer_telegram(message):
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
+
     try:
+
         requests.post(
             url,
             data={
@@ -66,8 +81,11 @@ def envoyer_telegram(message):
             timeout=15
         )
 
+
     except Exception as e:
+
         print("Erreur Telegram :", e)
+
 
 
 # =========================
@@ -76,8 +94,14 @@ def envoyer_telegram(message):
 
 if os.path.exists(FICHIER_VUS):
 
-    with open(FICHIER_VUS, "r", encoding="utf-8") as f:
+    with open(
+        FICHIER_VUS,
+        "r",
+        encoding="utf-8"
+    ) as f:
+
         logements_vus = set(json.load(f))
+
 
 else:
 
@@ -87,7 +111,11 @@ else:
 
 def sauvegarder_logements():
 
-    with open(FICHIER_VUS, "w", encoding="utf-8") as f:
+    with open(
+        FICHIER_VUS,
+        "w",
+        encoding="utf-8"
+    ) as f:
 
         json.dump(
             list(logements_vus),
@@ -95,6 +123,7 @@ def sauvegarder_logements():
             ensure_ascii=False,
             indent=2
         )
+
 
 
 # =========================
@@ -110,127 +139,187 @@ def creer_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
 
-    return webdriver.Chrome(options=options)
+
+    return webdriver.Chrome(
+        options=options
+    )
+
+
+# =========================
+# RECHERCHE D'UNE VILLE
+# =========================
+
+def rechercher_logements(driver, wait, recherche):
+
+    print("🔎 Recherche :", recherche)
+
+
+    driver.get(URL_RECHERCHE)
+
+
+    ville = wait.until(
+        EC.presence_of_element_located(
+            (
+                By.ID,
+                "PlaceAutocompletearia-autocomplete-1-input"
+            )
+        )
+    )
+
+
+    ville.clear()
+
+    ville.send_keys(recherche)
+
+
+    nom_recherche = recherche.split(",")[0]
+
+
+    suggestion = wait.until(
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                "//li[@role='option'][contains(.,\""
+                + nom_recherche
+                + "\")]"
+            )
+        )
+    )
+
+
+    suggestion.click()
+
+
+    bouton = wait.until(
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                "//button[contains(.,'Lancer une recherche')]"
+            )
+        )
+    )
+
+
+    bouton.click()
+
+
+    time.sleep(5)
+
+
+
+    page = driver.page_source
+
+
+
+    if (
+        "Aucun logement trouvé" in page
+        or
+        "0 logement trouvé" in page
+    ):
+
+        print("Aucun logement pour :", recherche)
+
+        return []
+
+
+
+    annonces = driver.find_elements(
+        By.XPATH,
+        "//a[@href]"
+    )
+
+
+    liens = []
+
+
+    for annonce in annonces:
+
+        lien = annonce.get_attribute("href")
+
+
+        if (
+            lien
+            and
+            "/tools/45/" in lien
+        ):
+
+            liens.append(lien)
+
+
+
+    return liens
+
 
 
 
 # =========================
-# VERIFICATION
+# VERIFICATION CROUS
 # =========================
 
 def verifier_logements():
 
     driver = creer_driver()
-    wait = WebDriverWait(driver, 30)
+
+    wait = WebDriverWait(
+        driver,
+        30
+    )
+
 
     print("🤖 Vérification CROUS lancée...")
 
 
+    nouveaux = 0
+
+
     try:
 
-        driver.get(URL_RECHERCHE)
+
+        for recherche in RECHERCHES:
 
 
-        ville = wait.until(
-            EC.presence_of_element_located(
-                (
-                    By.ID,
-                    "PlaceAutocompletearia-autocomplete-1-input"
-                )
+            logements = rechercher_logements(
+                driver,
+                wait,
+                recherche
             )
-        )
 
 
-        ville.clear()
-        ville.send_keys(VILLE)
+            for lien in logements:
 
 
-        suggestion = wait.until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//li[@role='option'][contains(.,'Orléans')]"
-                )
-            )
-        )
-
-        suggestion.click()
+                if lien not in logements_vus:
 
 
-        bouton = wait.until(
-            EC.element_to_be_clickable(
-                (
-                    By.XPATH,
-                    "//button[contains(.,'Lancer une recherche')]"
-                )
-            )
-        )
+                    logements_vus.add(lien)
 
-        bouton.click()
+                    sauvegarder_logements()
 
 
-        time.sleep(5)
+                    envoyer_telegram(
+
+                        "🚨 NOUVEAU LOGEMENT CROUS\n\n"
+                        f"🔎 Recherche : {recherche}\n\n"
+                        "🔗 Lien :\n"
+                        + lien
+
+                    )
 
 
-        page = driver.page_source
-
-
-        if (
-            "Aucun logement trouvé" in page
-            or
-            "0 logement trouvé" in page
-        ):
-
-            print("Aucun logement.")
-
-            mettre_a_jour_status(0)
-
-            return
-
-
-
-        annonces = driver.find_elements(
-            By.XPATH,
-            "//a[@href]"
-        )
-
-
-        nouveaux = 0
-
-
-        for annonce in annonces:
-
-            lien = annonce.get_attribute("href")
-
-
-            if (
-                lien
-                and
-                "/tools/45/" in lien
-                and
-                lien not in logements_vus
-            ):
-
-                logements_vus.add(lien)
-
-                sauvegarder_logements()
-
-
-                envoyer_telegram(
-                    "🚨 NOUVEAU LOGEMENT CROUS ORLÉANS\n\n"
-                    + lien
-                )
-
-
-                nouveaux += 1
+                    nouveaux += 1
 
 
 
         if nouveaux == 0:
 
-            print("Pas de nouveau logement.")
+
+            print(
+                "Pas de nouveau logement."
+            )
+
 
         else:
+
 
             print(
                 nouveaux,
@@ -238,33 +327,49 @@ def verifier_logements():
             )
 
 
-        mettre_a_jour_status(nouveaux)
+
+        mettre_a_jour_status(
+            nouveaux
+        )
 
 
 
     except Exception as e:
 
-        print("Erreur :", e)
+
+        print(
+            "Erreur :",
+            e
+        )
+
 
         mettre_a_jour_status(
             0,
             "ERREUR"
         )
 
+
         envoyer_telegram(
+
             "❌ ERREUR BOT CROUS\n\n"
             + str(e)
-        )
 
+        )
 
 
     finally:
 
+
         try:
+
             driver.quit()
 
+
         except:
+
             pass
+
+
 
 
 
@@ -273,5 +378,6 @@ def verifier_logements():
 # =========================
 
 if __name__ == "__main__":
+
 
     verifier_logements()
