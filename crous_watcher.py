@@ -11,38 +11,20 @@ import os
 import time
 
 
+# =========================
+# CONFIGURATION
+# =========================
+
 load_dotenv()
 
-
-# =========================
-# PARAMÈTRES
-# =========================
-
 VILLE = "Orléans"
+
 URL_RECHERCHE = "https://trouverunlogement.lescrous.fr/"
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 FICHIER_VUS = "logements_vus.json"
-
-
-if not TELEGRAM_TOKEN or not CHAT_ID:
-    raise Exception("❌ Variables Telegram manquantes")
-
-
-# =========================
-# LOGEMENTS DÉJÀ VUS
-# =========================
-
-if os.path.exists(FICHIER_VUS):
-
-    with open(FICHIER_VUS, "r", encoding="utf-8") as f:
-        logements_vus = set(json.load(f))
-
-else:
-    logements_vus = set()
-
 
 
 # =========================
@@ -54,49 +36,48 @@ def envoyer_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
     try:
-
         requests.post(
             url,
             data={
                 "chat_id": CHAT_ID,
-                "text": message,
+                "text": message
             },
-            timeout=15,
+            timeout=15
         )
 
     except Exception as e:
-
         print("Erreur Telegram :", e)
 
 
+# =========================
+# CHARGEMENT LOGEMENTS VUS
+# =========================
 
-def envoyer_photo(path):
+if os.path.exists(FICHIER_VUS):
 
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    with open(FICHIER_VUS, "r", encoding="utf-8") as f:
+        logements_vus = set(json.load(f))
 
-    try:
+else:
 
-        with open(path, "rb") as photo:
+    logements_vus = set()
 
-            requests.post(
-                url,
-                data={
-                    "chat_id": CHAT_ID
-                },
-                files={
-                    "photo": photo
-                },
-                timeout=30,
-            )
 
-    except Exception as e:
 
-        print("Erreur photo :", e)
+def sauvegarder_logements():
 
+    with open(FICHIER_VUS, "w", encoding="utf-8") as f:
+
+        json.dump(
+            list(logements_vus),
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
 
 
 # =========================
-# CHROME
+# NAVIGATEUR
 # =========================
 
 def creer_driver():
@@ -108,35 +89,16 @@ def creer_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
 
-    return webdriver.Chrome(
+    driver = webdriver.Chrome(
         options=options
     )
 
-
-
-# =========================
-# SAUVEGARDE
-# =========================
-
-def sauvegarder_vus():
-
-    with open(
-        FICHIER_VUS,
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        json.dump(
-            list(logements_vus),
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+    return driver
 
 
 
 # =========================
-# UNE VÉRIFICATION
+# VERIFICATION CROUS
 # =========================
 
 def verifier_logements():
@@ -144,6 +106,7 @@ def verifier_logements():
     driver = creer_driver()
 
     wait = WebDriverWait(driver, 30)
+
 
     print("🤖 Vérification CROUS lancée...")
 
@@ -154,50 +117,61 @@ def verifier_logements():
 
 
         ville = wait.until(
+
             EC.presence_of_element_located(
                 (
                     By.ID,
-                    "PlaceAutocompletearia-autocomplete-1-input",
+                    "PlaceAutocompletearia-autocomplete-1-input"
                 )
             )
+
         )
 
 
         ville.clear()
+
         ville.send_keys(VILLE)
 
 
 
         suggestion = wait.until(
+
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
-                    "//li[@role='option'][contains(.,'Orléans')]",
+                    "//li[@role='option'][contains(.,'Orléans')]"
                 )
             )
+
         )
+
 
         suggestion.click()
 
 
 
         bouton = wait.until(
+
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
-                    "//button[contains(.,'Lancer une recherche')]",
+                    "//button[contains(.,'Lancer une recherche')]"
                 )
             )
+
         )
 
 
         bouton.click()
 
 
+
         time.sleep(5)
 
 
+
         page = driver.page_source
+
 
 
         if (
@@ -212,6 +186,10 @@ def verifier_logements():
 
 
 
+        print("Logements détectés !")
+
+
+
         annonces = driver.find_elements(
             By.XPATH,
             "//a[@href]"
@@ -221,37 +199,36 @@ def verifier_logements():
         nouveaux = 0
 
 
+
         for annonce in annonces:
 
 
             lien = annonce.get_attribute("href")
 
 
+
             if (
+
                 lien
-                and "/tools/45/" in lien
-                and lien not in logements_vus
+                and
+                "/tools/45/" in lien
+                and
+                lien not in logements_vus
+
             ):
 
 
                 logements_vus.add(lien)
 
-                sauvegarder_vus()
+                sauvegarder_logements()
 
-
-                driver.save_screenshot(
-                    "nouveau_logement.png"
-                )
 
 
                 envoyer_telegram(
-                    "🚨 NOUVEAU LOGEMENT CROUS À ORLÉANS\n\n"
+
+                    "🚨 NOUVEAU LOGEMENT CROUS ORLÉANS\n\n"
                     + lien
-                )
 
-
-                envoyer_photo(
-                    "nouveau_logement.png"
                 )
 
 
@@ -259,21 +236,21 @@ def verifier_logements():
 
 
 
-        if nouveaux:
+        if nouveaux == 0:
 
-            print(
-                f"{nouveaux} nouveau(x) logement(s)."
-            )
+            print("Pas de nouveau logement.")
 
         else:
 
             print(
-                "Pas de nouveau logement."
+                nouveaux,
+                "nouveau(x) logement(s) détecté(s)."
             )
 
 
 
     except Exception as e:
+
 
         print(
             "Erreur :",
@@ -281,9 +258,20 @@ def verifier_logements():
         )
 
 
+        envoyer_telegram(
+
+            "❌ ERREUR BOT CROUS\n\n"
+            + str(e)
+
+        )
+
+
+
     finally:
 
+
         try:
+
             driver.quit()
 
         except:
@@ -292,8 +280,9 @@ def verifier_logements():
 
 
 
+
 # =========================
-# PROGRAMME PRINCIPAL
+# LANCEMENT
 # =========================
 
 if __name__ == "__main__":
