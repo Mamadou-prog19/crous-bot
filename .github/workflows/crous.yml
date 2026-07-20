@@ -3,36 +3,48 @@ name: CROUS Watcher
 on:
   schedule:
     - cron: "*/10 * * * *"
-
   workflow_dispatch:
 
+permissions:
+  contents: write
 
 jobs:
   check-crous:
-
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Récupération du code
+      - name: Recuperation du code
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
 
       - name: Installation Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-
-      - name: Installation dépendances
-        run: |
-          pip install -r requirements.txt
-
+      - name: Installation dependances
+        run: pip install -r requirements.txt
 
       - name: Lancement du bot
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python crous_watcher.py
 
+      - name: Sauvegarde du statut
         run: |
-          python crous_watcher.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add status.json
+
+          if [ -f logements_vus.json ]; then
+            git add logements_vus.json
+          fi
+
+          if git diff --cached --quiet; then
+            echo "Aucun changement de statut a sauvegarder."
+          else
+            git commit -m "Mise a jour automatique du statut CROUS"
+            git push
+          fi
