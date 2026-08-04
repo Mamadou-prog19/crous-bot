@@ -1,11 +1,8 @@
 {
-  "dernier_controle": "04/08/2026 10:03:13",
+  "dernier_controle": "04/08/2026 12:16:30",
   "logements_trouves": 0,
-  "statut": "OK",
+  "statut": "ERREUR",
   "recherches_effectuees": [
-    "Orléans",
-    "Polytech Orléans",
-    "Université d'Orléans - Campus de la Source",
-    "Angers"
+    "Orléans"
   ]
 }
