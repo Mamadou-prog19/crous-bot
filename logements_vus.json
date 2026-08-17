@@ -2,5 +2,17 @@
   "https://trouverunlogement.lescrous.fr/tools/42/cart",
   "https://trouverunlogement.lescrous.fr/tools/42/search",
   "https://trouverunlogement.lescrous.fr/tools/47/cart",
-  "https://trouverunlogement.lescrous.fr/tools/47/search"
+  "https://trouverunlogement.lescrous.fr/tools/47/search",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=-0.6176931_47.5262993_-0.508546_47.4373546&locationName=Angers#footer",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=-0.6176931_47.5262993_-0.508546_47.4373546&locationName=Angers#main",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=-0.6176931_47.5262993_-0.508546_47.4373546&locationName=Angers#menu",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.8757578_47.9335389_1.9487114_47.8132802&locationName=Orl%C3%A9ans#footer",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.8757578_47.9335389_1.9487114_47.8132802&locationName=Orl%C3%A9ans#main",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.8757578_47.9335389_1.9487114_47.8132802&locationName=Orl%C3%A9ans#menu",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.926661_47.8512976_1.9417649_47.8390913&locationName=Universit%C3%A9+d%27Orl%C3%A9ans+-+Campus+de+la+Source%2C+Orl%C3%A9ans#footer",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.926661_47.8512976_1.9417649_47.8390913&locationName=Universit%C3%A9+d%27Orl%C3%A9ans+-+Campus+de+la+Source%2C+Orl%C3%A9ans#main",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.926661_47.8512976_1.9417649_47.8390913&locationName=Universit%C3%A9+d%27Orl%C3%A9ans+-+Campus+de+la+Source%2C+Orl%C3%A9ans#menu",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.9368641_47.8447239_1.9393364_47.8429552&locationName=Polytech+Orl%C3%A9ans%2C+Orl%C3%A9ans#footer",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.9368641_47.8447239_1.9393364_47.8429552&locationName=Polytech+Orl%C3%A9ans%2C+Orl%C3%A9ans#main",
+  "https://trouverunlogement.lescrous.fr/tools/47/search?bounds=1.9368641_47.8447239_1.9393364_47.8429552&locationName=Polytech+Orl%C3%A9ans%2C+Orl%C3%A9ans#menu"
 ]
